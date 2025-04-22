@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+
+{% block title %}知了传课-用户信息{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{url_for('static',filename='css/user_info.css')}}">
+<script>
+    function toggleEditForm() {
+        var form = document.getElementById('edit-form');
+        var button = document.getElementById('edit-button');
+        var userInfoDisplay = document.getElementById('user-info-display');
+        if (form.style.display === 'none') {
+            form.style.display = 'block';
+            button.textContent = '隐藏编辑信息';
+            userInfoDisplay.style.display = 'none';
+        } else {
+            form.style.display = 'none';
+            button.textContent = '编辑个人信息';
+            userInfoDisplay.style.display = 'block';
+        }
+    }
+</script>
+{% endblock %}
+
+{% block body %}
+<div class="row mt-4">
+    <div class="col"></div>
+    <div class="col-8">
+        <div class="card">
+            <div class="card-header">
+                <h3>{{ user.username }} 的个人信息</h3>
+                <button id="edit-button" class="btn btn-primary" onclick="toggleEditForm()">编辑个人信息</button>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-4">
+                        <img src="{% if user.avatar %}{{ url_for('uploaded_file', filename=user.avatar) }}{% else %}{{ url_for('static', filename='avatar.jpg') }}{% endif %}" class="img-fluid rounded-circle" alt="{{ user.username }}">
+                        
+                    </div>
+                    <div class="col-8">
+                        <div id="user-info-display">
+                            <p><strong>用户名:</strong>{{user.username}}</p>
+                            <p><strong>邮箱:</strong>{{user.email}}</p>
+                            <p><strong>IP地址:</strong>{{user_ip}}</p>
+                        </div>
+                        <form id="edit-form" method="POST" enctype="multipart/form-data" style="display: none;">
+                            <!-- 修改用户名 -->
+                            <div class="form-group">
+                                <label for="exampleInputUsername1">新用户名</label>
+                                <input type="text" class="form-control" id="exampleInputUsername1" name="username" placeholder="{{ user.username }}">
+                                <small id="usernameHelp" class="form-text text-muted">请输入新的用户名</small>
+                            </div>
+                            <!-- 修改密码 -->
+                            <div class="form-group">
+                                <label for="exampleInputOldPassword1">旧密码</label>
+                                <input type="password" class="form-control" id="exampleInputOldPassword1" name="old_password">
+                                <small id="oldPasswordHelp" class="form-text text-muted">请输入旧密码</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="exampleInputNewPassword1">新密码</label>
+                                <input type="password" class="form-control" id="exampleInputNewPassword1" name="new_password">
+                                <small id="newPasswordHelp" class="form-text text-muted">请输入新密码</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="exampleInputConfirmNewPassword1">确认新密码</label>
+                                <input type="password" class="form-control" id="exampleInputConfirmNewPassword1" name="confirm_new_password">
+                                <small id="confirmNewPasswordHelp" class="form-text text-muted">请再次输入新密码</small>
+                            </div>
+                            <!-- 修改头像 -->
+                            <div class="form-group">
+                                <label for="exampleInputAvatar1">新头像</label>
+                                <input type="file" class="form-control-file" id="exampleInputAvatar1" name="avatar">
+                                <small id="avatarHelp" class="form-text text-muted">请选择新的头像</small>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block">提交修改</button>
+                        </form>
+                        {% if password_error %}
+                        <div class="alert alert-danger mt-3" role="alert">
+                            {{ password_error }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card mt-4">
+            <div class="card-header">
+                <h3>{{user.username}}发布的帖子</h3>
+            </div>
+            <div class="card-body">
+                <ul class="list-group">
+                    {% for question in questions %}
+                    <li class="list-group-item">
+                        <a href="{{url_for('qa.qa_detail',qa_id = question.id)}}">{{ question.title }}</a>
+                        <p class="text-muted">{{ question.create_time }}</p>
+                        <form action="{{url_for('auth.delete_question',question_id = question.id)}}" method="post">
+                            <button type="submit" class="btn btn-danger btn-sm">删除</button>
+                        </form>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        <!-- 分页导航栏 -->
+        <nav aria-label="Page navigation example">
+            <ul class="pagination">
+                {% if pagination.has_prev %}
+                    <li class="page-item"><a class="page-link" href="{{ url_for('auth.user_info', page=pagination.prev_num) }}">上一页</a></li>
+                {% else %}
+                    <li class="page-item disabled"><a class="page-link" href="#">上一页</a></li>
+                {% endif %}
+
+                {% for page_num in pagination.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
+                    {% if page_num %}
+                        {% if page_num == pagination.page %}
+                            <li class="page-item active"><a class="page-link" href="{{ url_for('auth.user_info', page=page_num) }}">{{ page_num }}</a></li>
+                        {% else %}
+                            <li class="page-item"><a class="page-link" href="{{ url_for('auth.user_info', page=page_num) }}">{{ page_num }}</a></li>
+                        {% endif %}
+                    {% else %}
+                        <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if pagination.has_next %}
+                    <li class="page-item"><a class="page-link" href="{{ url_for('auth.user_info', page=pagination.next_num) }}">下一页</a></li>
+                {% else %}
+                    <li class="page-item disabled"><a class="page-link" href="#">下一页</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    <div class="col"></div>
+</div>
+{% endblock %}

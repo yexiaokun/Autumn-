@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    知了传课-发布问答
+{% endblock  %}
+
+{% block head %}
+    <!-- 引入 Quill 的 CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='quill/dist/quill.snow.css') }}">
+    <!-- 引入 Quill 的 JavaScript -->
+    <script src="{{ url_for('static', filename='quill/dist/quill.js') }}"></script>
+{% endblock  %}
+
+{% block body %}
+<div class="row" style="margin-top: 20px;">
+    <div class="col"></div>
+    <div class="col-10">
+        <h1 style="text-align: center;">发布问答</h1>
+        <form action="{{ url_for('qa.public_question') }}" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <input type="text" id="title" name="title" class="form-control" placeholder="请输入标题">
+            </div>
+            <!-- Quill 编辑器容器 -->
+            <div id="editor" style="height: 300px;"></div>
+            <input type="hidden" id="content" name="content">
+            <!-- 1111111111111kjghdhgklhahhdhfhdhfhfhfhhfhfhfhhfhfhfhhfhf -->
+            <div class="form-group" style="text-align: right;">
+                <button class="btn btn-primary">发布</button>
+            </div>
+        </form>
+    </div>
+    <div class="col"></div>
+</div>
+
+<!-- 引入图片大小调整模块的 JavaScript -->
+<script src="{{ url_for('static', filename='js/image-resize.js') }}"></script>
+<script>
+    var quill = new Quill('#editor', {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                ['bold', 'italic', 'underline', 'strike'],
+                ['link', 'image'], // 添加图片按钮
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'align': [] }]
+            ],
+            imageResize:{
+                keepRatio:true
+            } //启用图片大小调整模块
+        }
+    });
+    // 处理图片上传
+    quill.getModule('toolbar').addHandler('image', function() {
+        var input = document.createElement('input');
+        input.setAttribute('type', 'file');
+        input.setAttribute('accept', 'image/*');
+        input.addEventListener('change', function() {
+            var file = this.files[0];
+            if (file) {
+                var formData = new FormData();
+                formData.append('image', file);
+
+                // 发送图片上传请求
+                fetch('/upload-image', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 在编辑器中插入图片
+                        var range = quill.getSelection();
+                        quill.insertEmbed(range.index, 'image', data.url);
+                    }
+                });
+            }
+        });
+        input.click();
+    });
+
+    // 在表单提交时，将编辑器内容保存到隐藏字段中
+    var questionForm = document.querySelector('form[action="{{ url_for("qa.public_question") }}"]');
+    questionForm.onsubmit = function() {
+        var content = quill.root.innerHTML;
+        document.getElementById('content').value = content;
+        console.log('Submitted content:', content); // 添加调试信息
+        return true;
+    };
+</script>
+{% endblock  %}

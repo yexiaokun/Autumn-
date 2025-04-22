@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}知了传课-修改头像{% endblock  %}
+
+{% block head %}{% endblock  %}
+
+{% block body %}
+<div class="row mt-4">
+    <div class="col"></div>
+    <div class="col">
+        {% if error %}
+        <div class="alert alert-danger" role="alert">
+            {{ error|safe }}
+        </div>
+        {% endif %}
+
+        {% if success %}
+        <div class="alert alert-success" role="alert">
+            {{ success|safe }}
+        </div>
+        {% endif %}
+
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="exampleInputAvatar1">新头像</label>
+                <input type="file" class="form-control-file" id="exampleInputAvatar1" name="avatar">
+                <small id="avatarHelp" class="form-text text-muted">请选择新的头像</small>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">提交修改</button>
+        </form>
+    </div>
+    <div class="col"></div>
+</div>
+{% endblock  %}

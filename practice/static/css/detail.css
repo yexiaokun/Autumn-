@@ -1,0 +1,107 @@
+.page-title{
+    text-align: center;
+}
+
+.question-info{
+    text-align: center;
+}
+
+.comment-group-title{
+    margin-top: 20px;
+}
+
+.form-container{
+    width: 500px;
+    margin-top: 10px;
+    text-align: right;
+}
+
+.comment-group{
+    list-style: none;
+    padding-left: 0;
+}
+
+.comment-group li{
+    border-bottom:1px solid #eee;
+    padding: 10px 0;
+}
+
+.comment-group li .user-info{
+    height: 40px;
+    line-height:40px;
+    color: #9b9b9b;
+    font-size: 16px;
+}
+
+.user-info .avatar{
+    height:40px;
+    width: 40px;
+    float: left;
+    border-radius: 50%;
+}
+
+.user-info .username{
+    margin-left: 10px;
+}
+.user-info .create-time{
+    float: right;
+}
+.comment-content{
+    margin-left: 50px;
+}
+
+.second-comment-group {
+    list-style: none;
+    padding-left: 50px;
+    margin-top: 10px;
+}
+
+.second-comment-group li {
+    border-bottom: 1px solid #eee;
+    padding: 10px 0;
+}
+/* 确保问题图片、评论图片和二级评论图片自适应 */
+.img-fluid {
+    width: auto;
+    height: auto;
+}
+.ql-image-resize {
+    position: absolute;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    pointer-events: auto;
+}
+
+.ql-image-resize-handle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    cursor: pointer;/* 显示鼠标指针样式 */
+}
+
+.ql-image-resize-handle-top-left {
+    top: -5px;
+    left: -5px;
+    cursor: nwse-resize;
+}
+
+.ql-image-resize-handle-top-right {
+    top: -5px;
+    right: -5px;
+    cursor: nesw-resize;
+}
+
+.ql-image-resize-handle-bottom-left {
+    bottom: -5px;
+    left: -5px;
+    cursor: nesw-resize;
+}
+
+.ql-image-resize-handle-bottom-right {
+    bottom: -5px;
+    right: -5px;
+    cursor: nwse-resize;
+}

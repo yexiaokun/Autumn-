@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+
+{% block title %}
+    知了传课-首页
+{% endblock  %}
+    
+
+{% block head %}
+<link rel="stylesheet" href="{{url_for('static',filename='css/index.css')}}">
+<!-- 引入 Quill 的 JavaScript -->
+<script src="{{ url_for('static', filename='quill/dist/quill.js') }}"></script>
+<!-- 引入图片大小调整模块的 JavaScript -->
+<script src="{{ url_for('static', filename='js/image-resize.js') }}"></script>
+{% endblock  %}
+    
+
+{% block body %}
+<div class="row" style="margin-top: 20px;">
+    <div class="col"></div>
+    <div class="col-10">
+        
+        {% if no_results %}
+        <div>
+            没有找到与 "{{request.args.get('q')}}" 相关的内容,请尝试其他关键字
+        </div>
+        {% else %}
+            <ul class="question-ul">
+                {% for question in questions %}
+                    <li>
+                        <div class="side-question">
+                            <img class="side-question-avatar image-fluid" src="{% if question.author.avatar %}{{ url_for('uploaded_file', filename=question.author.avatar) }}{% else %}{{ url_for('static', filename='images/avatar.jpg') }}{% endif %}" alt="">
+                        </div>
+                        <div class="question-main">
+                            <div class="question-title"><a href="{{url_for('qa.qa_detail',qa_id = question.id)}}">{{question.title|safe}}</a></div>
+                            <div class="question-detail">
+                                <span class="question-author">{{question.author.username}}</span>
+                                <span class="question-time">{{question.create_time}}</span>
+                            </div>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+            <!-- 分页导航栏 -->
+            <nav aria-label="Page navigation example">
+                <ul class="pagination">
+                    {% if pagination.has_prev %}
+                        <li class="page-item"><a class="page-link" href="{{ url_for('qa.index', page=pagination.prev_num) }}">上一页</a></li>
+                    {% else %}
+                        <li class="page-item disabled"><a class="page-link" href="#">上一页</a></li>
+                    {% endif %}
+
+                    {% for page_num in pagination.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
+                        {% if page_num %}
+                            {% if page_num == pagination.page %}
+                                <li class="page-item active"><a class="page-link" href="{{ url_for('qa.index', page=page_num) }}">{{ page_num }}</a></li>
+                            {% else %}
+                                <li class="page-item"><a class="page-link" href="{{ url_for('qa.index', page=page_num) }}">{{ page_num }}</a></li>
+                            {% endif %}
+                        {% else %}
+                            <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if pagination.has_next %}
+                        <li class="page-item"><a class="page-link" href="{{ url_for('qa.index', page=pagination.next_num) }}">下一页</a></li>
+                    {% else %}
+                        <li class="page-item disabled"><a class="page-link" href="#">下一页</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    </div>
+    <div class="col"></div>
+</div>
+{% endblock  %}
+    

@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}知了传课-注册{% endblock  %}
+
+{% block head %}
+<script src="{{url_for('static',filename='jquery/jquery.3.6.min.js')}}"></script>
+<script src="{{url_for('static',filename='js/register.js')}}"></script>
+{% endblock  %}
+
+{% block body %}
+<div class="row mt-4">
+    <div class="col"></div>
+    <div class="col">
+        {% if error %}
+        <div class="alert alert-danger" role="alert">
+            {{ error|safe }}
+        </div>
+        {% endif %}
+        
+        {% if success %}
+        <div class="alert alert-success" role="alert">
+            {{ success|safe }}
+        </div>
+        {% endif %}
+            
+        <form method="POST">
+            <div class="form-group">
+                <label for="exampleInputEmail1">邮箱</label>
+                <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" name="email" value="{{email if email else '' }}">
+                <small id="emailHelp" class="form-text text-muted">请输入有效的邮箱地址</small>
+            </div>
+            <div class="form-group">
+                <label for="exampleInputEmail1">验证码</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" name="captcha">
+                    <div class="input-group-append">
+                        <button class="btn btn-outline-secondary" type="button" id="captcha-btn">获取验证码</button>
+                    </div>
+                </div>
+                <small id="captcha" class="form-text text-muted">请输入收到的4位验证码</small>
+            </div>
+            <div class="form-group">
+                <label for="exampleInputEmail1">用户名</label>
+                <input type="text" class="form-control" name="username" value="{{username if username else '' }}">
+                <small id="usernameHelp" class="form-text text-muted">用户名不能为空</small>
+            </div>
+            <div class="form-group">
+                <label for="exampleInputPassword1">密码</label>
+                <input type="password" class="form-control" id="exampleInputPassword1" name="password" value="{{password if password else ''}}">
+                <small id="passwordHelp" class="form-text text-muted">密码长度不能少于6位</small>
+            </div>
+            <div class="form-group">
+                <label for="exampleInputPassword1">确认密码</label>
+                <input type="password" class="form-control" name="password_confirm" value="{{password_confirm if password==password_confirm else ''}}">
+                <small id="passwordConfirmHelp" class="form-text text-muted">请再次输入相同的密码</small>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">立即注册</button>
+        </form>
+    </div>
+    <div class="col"></div>
+</div>
+{% endblock  %}
