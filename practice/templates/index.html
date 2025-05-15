@@ -1,77 +1,362 @@
+<!DOCTYPE html>
 {% extends 'base.html' %}
 
-
-{% block title %}
-    知了传课-首页
-{% endblock  %}
-    
+{% block title %}首页{% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="{{url_for('static',filename='css/index.css')}}">
-<!-- 引入 Quill 的 JavaScript -->
-<script src="{{ url_for('static', filename='quill/dist/quill.js') }}"></script>
-<!-- 引入图片大小调整模块的 JavaScript -->
-<script src="{{ url_for('static', filename='js/image-resize.js') }}"></script>
-{% endblock  %}
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/detail.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='quill/dist/quill.snow.css') }}">
+    <script src="{{ url_for('static', filename='quill/dist/quill.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/image-resize.js') }}"></script>
+    <script>
+        const isLoggedIn = {{ 'true' if user else 'false' }};
+
+        function likeQuestion(question_id) {
+    const isLoggedIn = {{ 'true' if user else 'false' }};
+    if (!isLoggedIn) {
+        if (confirm("您还未登录，是否要去登录？")) {
+            window.location.href = "{{ url_for('auth.login') }}";
+        }
+        return;
+    }
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    console.log(csrfToken); // 调试信息
+    const likesElement = document.getElementById(`question-likes-${question_id}`);
+    const isLiked = likesElement.textContent.includes("取消点赞");
+
+    fetch(`/like_question/${question_id}`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('请求失败');
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            likesElement.textContent = isLiked ? `点赞(${data.likes})` : `取消点赞(${data.likes})`;
+        }
+    })
+    .catch(error => {
+        console.error("点赞失败:", error);
+        alert("点赞操作失败，请刷新页面重试。");
+    });
+}
+
+        function likeComment(comment_id) {
+            if (!isLoggedIn) {
+                if (confirm("您还未登录，是否要去登录？")) {
+                    window.location.href = "{{ url_for('auth.login') }}";
+                }
+                return;
+            }
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            var likesElement = document.getElementById(`comment-likes-${comment_id}`);
+            var isLiked = likesElement.textContent.includes("取消点赞");
+
+            fetch(`/like_comment/${comment_id}`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (isLiked) {
+                        likesElement.textContent = `点赞(${data.likes})`;
+                    } else {
+                        likesElement.textContent = `取消点赞(${data.likes})`;
+                    }
+                }
+            });
+        }
+        function likeSecondComment(second_comment_id) {
+            if (!isLoggedIn) {
+                if (confirm("您还未登录，是否要去登录？")) {
+                    window.location.href = "{{ url_for('auth.login') }}";
+                }
+                return;
+            }
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            var likesElement = document.getElementById(`second-comment-likes-${second_comment_id}`);
+            var isLiked = likesElement.textContent.includes("取消点赞");
+
+            fetch(`/like_second_comment/${second_comment_id}`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (isLiked) {
+                        likesElement.textContent = `点赞(${data.likes})`;
+                    } else {
+                        likesElement.textContent = `取消点赞(${data.likes})`;
+                    }
+                }
+            });
+        }
+
+        function toggleComments(question_id) {
+            var commentDiv = document.getElementById(`comments-${question_id}`);
+            if (commentDiv.style.display === 'none') {
+                commentDiv.style.display = 'block';
+            } else {
+                commentDiv.style.display = 'none';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // 遍历所有问题和评论，初始化 Quill 编辑器
+            {% for question in questions %}
+                {% for comment in question_comments[question.id] %}
+                    (function (commentId) {
+                        var editorContainer = document.getElementById('second-comment-editor-' + commentId);
+                        if (editorContainer) {
+                            // 初始化 Quill 编辑器
+                            var secondCommentQuill = new Quill(editorContainer, {
+                                theme: 'snow',
+                                modules: {
+                                    toolbar: [
+                                        ['bold', 'italic', 'underline', 'strike'],
+                                        ['link', 'image'],
+                                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                                        [{ 'align': [] }]
+                                    ],
+                                    imageResize: {}
+                                }
+                            });
+
+                            // 获取表单并绑定提交事件
+                            var secondCommentForm = document.getElementById('second-comment-form-' + commentId);
+                            if (secondCommentForm) {
+                                secondCommentForm.addEventListener('submit', function (event) {
+                                    // 获取 Quill 编辑器的内容
+                                    var secondCommentContent = secondCommentQuill.root.innerHTML.trim();
+
+                                    // 调试信息
+                                    console.log('Quill content for comment ID ' + commentId + ':', secondCommentContent);
+
+                                    // 检查内容是否为空
+                                    if (secondCommentContent === '<p><br></p>' || secondCommentContent === '') {
+                                        alert('回复内容不能为空！');
+                                        event.preventDefault(); // 阻止表单提交
+                                        return false;
+                                    }
+
+                                    // 将内容保存到隐藏字段
+                                    var hiddenField = document.getElementById('second-comment-content-' + commentId);
+                                    if (hiddenField) {
+                                        hiddenField.value = secondCommentContent;
+                                        console.log('Hidden field value set for comment ID ' + commentId + ':', hiddenField.value);
+                                    } else {
+                                        console.error('Hidden field not found for comment ID:', commentId);
+                                        event.preventDefault(); // 阻止表单提交
+                                        return false;
+                                    }
+                                });
+                            } else {
+                                console.error('Form not found for comment ID:', commentId);
+                            }
+                        } else {
+                            console.error('Editor container not found for comment ID:', commentId);
+                        }
+                    })({{ comment.id }});
+                {% endfor %}
+            {% endfor %}});
+    function toggleSecondComments(commentId) {
+    var secondCommentsList = document.getElementById(`second-comments-list-${commentId}`);
+    var button = document.querySelector(`.toggle-second-comments-button[data-second-comment-id="${commentId}"]`);
+    if (secondCommentsList.style.display === 'none') {
+        secondCommentsList.style.display = 'block';
+        button.textContent = '隐藏回复';
+    } else {
+        secondCommentsList.style.display = 'none';
+        button.textContent = '查看回复';
+    }
+}
+
+            // 点击按钮显示/隐藏二级评论
     
+
+
+    function checkLoginAndShowForm(formId) {
+        if (!isLoggedIn) {
+            if (confirm("您还未登录，是否要去登录？")) {
+                window.location.href = "{{ url_for('auth.login') }}";
+            }
+        } else {
+            var form = document.getElementById(formId);
+            if (form.style.display === 'none') {
+                form.style.display = 'block';
+            } else {
+                form.style.display = 'none';
+            }
+        }
+    }
+    function deleteComment(commentId) {
+    if (confirm("确定要删除这条评论吗？")) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        fetch(`/delete_comment/${commentId}`, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": csrfToken // 如果启用了 CSRF 保护
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert("评论已删除");
+                document.getElementById(`comment-${commentId}`).remove(); // 假设评论的外层容器有 id
+            } else {
+                alert(data.message || "删除失败");
+            }
+        });
+    }
+}
+
+function deleteSecondComment(secondCommentId) {
+    if (confirm("确定要删除这条回复吗？")) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        fetch(`/delete_second_comment/${secondCommentId}`, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": csrfToken // 如果启用了 CSRF 保护
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert("回复已删除");
+                document.getElementById(`second-comment-${secondCommentId}`).remove(); // 假设回复的外层容器有 id
+            } else {
+                alert(data.message || "删除失败");
+            }
+        });
+    }
+}
+</script>
+    {{ super() }}
+{% endblock %}
 
 {% block body %}
 <div class="row" style="margin-top: 20px;">
     <div class="col"></div>
-    <div class="col-10">
-        
-        {% if no_results %}
-        <div>
-            没有找到与 "{{request.args.get('q')}}" 相关的内容,请尝试其他关键字
-        </div>
-        {% else %}
-            <ul class="question-ul">
-                {% for question in questions %}
-                    <li>
-                        <div class="side-question">
-                            <img class="side-question-avatar image-fluid" src="{% if question.author.avatar %}{{ url_for('uploaded_file', filename=question.author.avatar) }}{% else %}{{ url_for('static', filename='images/avatar.jpg') }}{% endif %}" alt="">
-                        </div>
-                        <div class="question-main">
-                            <div class="question-title"><a href="{{url_for('qa.qa_detail',qa_id = question.id)}}">{{question.title|safe}}</a></div>
-                            <div class="question-detail">
-                                <span class="question-author">{{question.author.username}}</span>
-                                <span class="question-time">{{question.create_time}}</span>
-                            </div>
-                        </div>
-                    </li>
-                {% endfor %}
-            </ul>
-            <!-- 分页导航栏 -->
-            <nav aria-label="Page navigation example">
-                <ul class="pagination">
-                    {% if pagination.has_prev %}
-                        <li class="page-item"><a class="page-link" href="{{ url_for('qa.index', page=pagination.prev_num) }}">上一页</a></li>
-                    {% else %}
-                        <li class="page-item disabled"><a class="page-link" href="#">上一页</a></li>
-                    {% endif %}
+    <div class="col-8">
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a class="nav-link {% if tab == 'hot' %}active{% endif %}" href="{{ url_for('qa.index', tab='hot') }}">热门</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if tab == 'following' %}active{% endif %}" href="{{ url_for('qa.index', tab='following') }}">关注</a>
+            </li>
+        </ul>
 
-                    {% for page_num in pagination.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
-                        {% if page_num %}
-                            {% if page_num == pagination.page %}
-                                <li class="page-item active"><a class="page-link" href="{{ url_for('qa.index', page=page_num) }}">{{ page_num }}</a></li>
-                            {% else %}
-                                <li class="page-item"><a class="page-link" href="{{ url_for('qa.index', page=page_num) }}">{{ page_num }}</a></li>
-                            {% endif %}
+        <ul class="list-group mt-3">
+            {% for question in questions %}
+            <li class="list-group-item">
+                <!-- 问题相关信息 -->
+                <div class="user-info">
+                    <a href="{{ url_for('auth.user_info', user_id=question.author.id) }}">
+                        <img class="avatar" src="{% if question.author.avatar %}{{ url_for('uploaded_file', filename=question.author.avatar) }}{% else %}{{ url_for('static', filename='images/avatar.jpg') }}{% endif %}" alt="">
+                    </a>
+                    <span class="username">{{ question.author.username }}</span>
+                </div>
+                <h4 class="question-title"><a href="{{ url_for('qa.qa_detail', qa_id=question.id) }}">{{ question.title }}</a></h4>
+                <div class="question-actions" style="position: relative; float: right; text-align: right;">
+                    <p class="question-time">{{ question.create_time }}</p>
+                    <button class="btn btn-primary" onclick="likeQuestion({{ question.id }})" id="question-likes-{{ question.id }}">
+                        {% if g.user and question.id in liked_question_ids %}
+                            取消点赞({{ question.likes }})
                         {% else %}
-                            <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+                            点赞({{ question.likes }})
                         {% endif %}
-                    {% endfor %}
-
-                    {% if pagination.has_next %}
-                        <li class="page-item"><a class="page-link" href="{{ url_for('qa.index', page=pagination.next_num) }}">下一页</a></li>
-                    {% else %}
-                        <li class="page-item disabled"><a class="page-link" href="#">下一页</a></li>
-                    {% endif %}
-                </ul>
-            </nav>
-        {% endif %}
+                    </button>
+                    <button class="btn btn-secondary" onclick="toggleComments({{ question.id }})">查看评论</button>
+                </div>
+        
+                <div id="comments-{{ question.id }}" class="comment-container" style="display: none;">
+                    <ul class="comment-group">
+                        {% for comment in question_comments[question.id] %}
+                        <li id="comment-{{ comment.id }}">
+                            <!-- 一级评论部分 -->
+                            <div class="user-info">
+                                <a href="{{ url_for('auth.user_info', user_id=comment.author.id) }}">
+                                    <img class="avatar" src="{% if comment.author.avatar %}{{ url_for('uploaded_file', filename=comment.author.avatar) }}{% else %}{{ url_for('static', filename='images/avatar.jpg') }}{% endif %}" alt="">
+                                </a>
+                                <span class="username">{{ comment.author.username }}</span>
+                                <span class="create-time">{{ comment.create_time }}</span>
+                                <button id="comment-likes-{{ comment.id }}" class="btn btn-primary btn-sm" onclick="likeComment({{ comment.id }})">
+                                    {% if g.user and comment.id in liked_comment_ids %}
+                                        取消点赞({{ comment.likes }})
+                                    {% else %}
+                                        点赞({{ comment.likes }})
+                                    {% endif %}
+                                </button>
+                                {% if g.user and g.user.id == comment.author.id %}
+                                    <button class="btn btn-danger btn-sm" onclick="deleteComment({{ comment.id }})">删除</button>
+                                {% endif %}
+                            </div>
+                            <p class="comment-content">{{ comment.content|safe }}</p>
+        
+                            <!-- 回复按钮 -->
+                            <button class="btn btn-secondary btn-sm toggle-second-comment" data-comment-id="{{ comment.id }}" onclick="checkLoginAndShowForm('second-comment-form-{{ comment.id }}')">回复</button>
+                            <!-- 查看按钮 -->
+                            <button class="btn btn-secondary btn-sm toggle-second-comments-button" data-second-comment-id="{{ comment.id }}" data-second-comment-count="{{ comment.second_comments|length }}" onclick="toggleSecondComments({{ comment.id }})">查看({{ comment.second_comments|length }})</button>
+        
+                            <!-- 回复表单 -->
+                            <form action="{{ url_for('qa.public_second_comment') }}" method="post" enctype="multipart/form-data" id="second-comment-form-{{ comment.id }}" style="display: none;">
+                                {{ form.hidden_tag() }}
+                                <div id="second-comment-editor-{{ comment.id }}" style="height: 200px;"></div>
+                                <input type="hidden" id="second-comment-content-{{ comment.id }}" name="content">
+                                <input type="hidden" name="question_id" value="{{ question.id }}">
+                                <input type="hidden" name="parent_id" value="{{ comment.id }}">
+                                <div class="form-group" style="text-align: right;">
+                                    <button class="btn btn-primary">提交回复</button>
+                                </div>
+                            </form>
+        
+                            <!-- 二级评论 -->
+                            <ul id="second-comments-list-{{ comment.id }}" class="second-comment-group" style="display: none;">
+                                {% for second_comment in comment.second_comments %}
+                                <li id="second-comment-{{ second_comment.id }}">
+                                    <div class="user-info">
+                                        <a href="{{ url_for('auth.user_info', user_id=second_comment.author.id) }}">
+                                            <img class="avatar" src="{% if second_comment.author.avatar %}{{ url_for('uploaded_file', filename=second_comment.author.avatar) }}{% else %}{{ url_for('static', filename='images/avatar.jpg') }}{% endif %}" alt="">
+                                        </a>
+                                        <span class="username">{{ second_comment.author.username }}</span>
+                                        <span class="create-time">{{ second_comment.create_time }}</span>
+                                        <button id="second-comment-likes-{{ second_comment.id }}" class="btn btn-primary btn-sm" onclick="likeSecondComment({{ second_comment.id }})">
+                                            {% if g.user and second_comment.id in liked_comment_ids %}
+                                                取消点赞({{ second_comment.likes }})
+                                            {% else %}
+                                                点赞({{ second_comment.likes }})
+                                            {% endif %}
+                                        </button>
+                                        {% if g.user and g.user.id == second_comment.author.id %}
+                                            <button class="btn btn-danger btn-sm" onclick="deleteSecondComment({{ second_comment.id }})">删除</button>
+                                        {% endif %}
+                                    </div>
+                                    <p class="comment-content">{{ second_comment.content|safe }}</p>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
     </div>
     <div class="col"></div>
 </div>
-{% endblock  %}
-    
+{% endblock %}

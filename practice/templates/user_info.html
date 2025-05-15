@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}知了传课-用户信息{% endblock %}
+{% block title %}用户信息{% endblock %}
 
 {% block head %}
 <link rel="stylesheet" href="{{url_for('static',filename='css/user_info.css')}}">
@@ -19,7 +19,150 @@
             userInfoDisplay.style.display = 'block';
         }
     }
+    function followUser(user_id) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        fetch(`/auth/follow`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify({ user_id: user_id })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
+
+    function unfollowUser(user_id) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        fetch(`/auth/unfollow`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-Token': csrfToken
+            },
+            body: JSON.stringify({ user_id: user_id })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
 </script>
+<style>
+    /* 整体卡片样式 */
+.card {
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #ccc;
+    padding: 10px 15px;
+    font-weight: bold;
+}
+
+.card-body {
+    padding: 15px;
+}
+
+/* 用户头像样式 */
+.img-fluid.rounded-circle {
+    max-width: 100%;
+    height: auto;
+    border-radius: 50%;
+    display: block;
+    margin: 0 auto;
+}
+
+/* 表单样式 */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    box-sizing: border-box;
+}
+
+.form-control-file {
+    padding-top: 5px;
+}
+
+.btn {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+}
+
+/* 用户发布帖子列表样式 */
+.list-group {
+    list-style: none;
+    padding-left: 0;
+}
+
+.list-group-item {
+    border-bottom: 1px solid #eee;
+    padding: 10px 0;
+}
+
+.list-group-item a {
+    color: #259;
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.list-group-item p {
+    color: #9b9b9b;
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+/* 确保用户头像图片自适应，与主页样式一致 */
+.side-question-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 3px;
+    max-width: 100%;
+    height: auto;
+}
+</style>
 {% endblock %}
 
 {% block body %}
@@ -29,7 +172,19 @@
         <div class="card">
             <div class="card-header">
                 <h3>{{ user.username }} 的个人信息</h3>
-                <button id="edit-button" class="btn btn-primary" onclick="toggleEditForm()">编辑个人信息</button>
+                <!-- 显示关注按钮 -->
+                {% if g.user and g.user.id != user.id %}
+                    {% set is_following = user.followers.filter_by(follower_id=g.user.id).first() %}
+                    {% if is_following %}
+                        <button class="btn btn-danger" onclick="unfollowUser({{ user.id }})">取消关注</button>
+                    {% else %}
+                        <button class="btn btn-primary" onclick="followUser({{ user.id }})">关注</button>
+                    {% endif %}
+                {% endif %}
+                <!-- 只有当前用户是被查看用户本人时才显示编辑按钮 -->
+                {% if g.user and g.user.id == user.id %}
+                    <button id="edit-button" class="btn btn-primary" onclick="toggleEditForm()">编辑个人信息</button>
+                {% endif %}
             </div>
             <div class="card-body">
                 <div class="row">
@@ -41,14 +196,46 @@
                         <div id="user-info-display">
                             <p><strong>用户名:</strong>{{user.username}}</p>
                             <p><strong>邮箱:</strong>{{user.email}}</p>
+                            <p><strong>性别:</strong>{{user.gender if user.gender else '未填写'}}</p>
+                            <p><strong>年龄:</strong>{{user.age if user.age else '未填写'}}</p>
+                            <p><strong>出生日期:</strong>{{user.birth_date if user.birth_date else '未填写'}}</p>
                             <p><strong>IP地址:</strong>{{user_ip}}</p>
+                            {% if liker_usernames %}
+                                <p><strong>给你点赞的用户:</strong></p>
+                                
+                                {% for username in liker_usernames %}
+                                    {{ username }}{% if not loop.last %}, {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <p><strong>给你点赞的用户:</strong>暂无</p>
+                            {% endif %}
                         </div>
+                        
                         <form id="edit-form" method="POST" enctype="multipart/form-data" style="display: none;">
+                            {{ form.hidden_tag() }}
                             <!-- 修改用户名 -->
                             <div class="form-group">
                                 <label for="exampleInputUsername1">新用户名</label>
                                 <input type="text" class="form-control" id="exampleInputUsername1" name="username" placeholder="{{ user.username }}">
                                 <small id="usernameHelp" class="form-text text-muted">请输入新的用户名</small>
+                            </div>
+                            <!-- 修改性别 -->
+                            <div class="form-group">
+                                <label for="exampleInputGender1">性别</label>
+                                <input type="text" class="form-control" id="exampleInputGender1" name="gender" placeholder="{{ user.gender if user.gender else '未填写' }}">
+                                <small id="genderHelp" class="form-text text-muted">请输入性别</small>
+                            </div>
+                            <!-- 修改年龄 -->
+                            <div class="form-group">
+                                <label for="exampleInputAge1">年龄</label>
+                                <input type="number" class="form-control" id="exampleInputAge1" name="age" placeholder="{{ user.age if user.age else '未填写' }}">
+                                <small id="ageHelp" class="form-text text-muted">请输入年龄</small>
+                            </div>
+                            <!-- 修改出生日期 -->
+                            <div class="form-group">
+                                <label for="exampleInputBirthDate1">出生日期</label>
+                                <input type="text" class="form-control" id="exampleInputBirthDate1" name="birth_date" placeholder="{{ user.birth_date if user.birth_date else 'YYYY-MM-DD' }}">
+                                <small id="birthDateHelp" class="form-text text-muted">请输入出生日期</small>
                             </div>
                             <!-- 修改密码 -->
                             <div class="form-group">
@@ -74,13 +261,32 @@
                             </div>
                             <button type="submit" class="btn btn-primary btn-block">提交修改</button>
                         </form>
+                        
                         {% if password_error %}
                         <div class="alert alert-danger mt-3" role="alert">
                             {{ password_error }}
                         </div>
                         {% endif %}
+                            
                     </div>
                 </div>
+            </div>
+        </div>
+        <div class="card mt-4">
+            <div class="card-header">
+                <h3>{{user.username}}的粉丝列表</h3>
+            </div>
+            <div class="card-body">
+                <ul class="list-group">
+                    {% for follow in user.followers %}
+                    <li class="list-group-item">
+                        <a href="{{ url_for('auth.user_info', user_id=follow.follower.id) }}">
+                            <img class="avatar side-question-avatar" src="{% if follow.follower.avatar %}{{ url_for('uploaded_file', filename=follow.follower.avatar) }}{% else %}{{ url_for('static', filename='images/avatar.jpg') }}{% endif %}" alt="">
+                        </a>
+                        <span class="username">{{ follow.follower.username }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
             </div>
         </div>
         <div class="card mt-4">
@@ -93,9 +299,13 @@
                     <li class="list-group-item">
                         <a href="{{url_for('qa.qa_detail',qa_id = question.id)}}">{{ question.title }}</a>
                         <p class="text-muted">{{ question.create_time }}</p>
-                        <form action="{{url_for('auth.delete_question',question_id = question.id)}}" method="post">
-                            <button type="submit" class="btn btn-danger btn-sm">删除</button>
-                        </form>
+
+                        <!-- 只有当前用户是被查看用户本人时才显示删除按钮 -->
+                        {% if g.user and g.user.id == user.id %}
+                            <form action="{{url_for('auth.delete_question',question_id = question.id)}}" method="post">
+                                <button type="submit" class="btn btn-danger btn-sm">删除</button>
+                            </form>
+                        {% endif %}
                     </li>
                     {% endfor %}
                 </ul>
@@ -105,7 +315,7 @@
         <nav aria-label="Page navigation example">
             <ul class="pagination">
                 {% if pagination.has_prev %}
-                    <li class="page-item"><a class="page-link" href="{{ url_for('auth.user_info', page=pagination.prev_num) }}">上一页</a></li>
+                    <li class="page-item"><a class="page-link" href="{{ url_for('auth.user_info',user_id=user.id, page=pagination.prev_num) }}">上一页</a></li>
                 {% else %}
                     <li class="page-item disabled"><a class="page-link" href="#">上一页</a></li>
                 {% endif %}
@@ -113,9 +323,9 @@
                 {% for page_num in pagination.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
                     {% if page_num %}
                         {% if page_num == pagination.page %}
-                            <li class="page-item active"><a class="page-link" href="{{ url_for('auth.user_info', page=page_num) }}">{{ page_num }}</a></li>
+                            <li class="page-item active"><a class="page-link" href="{{ url_for('auth.user_info',user_id=user.id, page=page_num) }}">{{ page_num }}</a></li>
                         {% else %}
-                            <li class="page-item"><a class="page-link" href="{{ url_for('auth.user_info', page=page_num) }}">{{ page_num }}</a></li>
+                            <li class="page-item"><a class="page-link" href="{{ url_for('auth.user_info',user_id=user.id, page=page_num) }}">{{ page_num }}</a></li>
                         {% endif %}
                     {% else %}
                         <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
@@ -123,7 +333,7 @@
                 {% endfor %}
 
                 {% if pagination.has_next %}
-                    <li class="page-item"><a class="page-link" href="{{ url_for('auth.user_info', page=pagination.next_num) }}">下一页</a></li>
+                    <li class="page-item"><a class="page-link" href="{{ url_for('auth.user_info',user_id=user.id, page=pagination.next_num) }}">下一页</a></li>
                 {% else %}
                     <li class="page-item disabled"><a class="page-link" href="#">下一页</a></li>
                 {% endif %}

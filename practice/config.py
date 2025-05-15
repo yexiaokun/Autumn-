@@ -6,7 +6,7 @@ host = "127.0.0.1"
 port = 3306
 username = "root"
 password = "root"
-database = "zhiliao_oa"
+database = "practice"
 DB_URI = f"mysql+pymysql://{username}:{password}@{host}:{port}/{database}?charset=utf8"
 SQLALCHEMY_DATABASE_URI = DB_URI
 
